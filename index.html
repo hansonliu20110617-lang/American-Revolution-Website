@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The American Revolution — Hanson Liu & Noah Muller</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;0,700;1,300;1,400;1,700&family=IM+Fell+English:ital@0;1&family=Cinzel:wght@400;600;700&family=Cinzel+Decorative:wght@400;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{--ink:#120e08;--parch:#e8d9b5;--gold:#c9930a;--gold-b:#e8b020;--gold-l:#f5cd60;--blood:#6b1010;--blood-b:#b01e1e}
+html{scroll-behavior:smooth}
+body{background:var(--ink);color:var(--parch);font-family:'Cormorant Garamond',serif;overflow-x:hidden;cursor:none}
+
+/* ── FIXED LAYERS ── */
+#bgTex{position:fixed;inset:0;z-index:0;pointer-events:none}
+#bgFX{position:fixed;inset:0;z-index:2;pointer-events:none}    /* cursor + animated shapes */
+#trail{position:fixed;inset:0;z-index:9990;pointer-events:none}
+
+/* SECTION OVERLAYS — dramatic, animated */
+.sat{position:fixed;inset:0;z-index:1;pointer-events:none;opacity:0;transition:opacity 1.5s ease;transform-origin:center;will-change:opacity,transform}
+.sat.on{opacity:1}
+#s0{background:radial-gradient(ellipse 130% 110% at 94% 2%, rgba(210,18,18,.78) 0%,transparent 50%),radial-gradient(ellipse 70% 60% at 6% 92%, rgba(195,140,8,.3) 0%,transparent 50%);animation:atBreath 9s ease-in-out infinite}
+#s1{background:radial-gradient(ellipse 110% 90% at 94% 52%, rgba(188,125,8,.55) 0%,transparent 52%),radial-gradient(ellipse 65% 75% at 4% 22%, rgba(165,18,18,.4) 0%,transparent 52%);animation:atBreath 11s ease-in-out infinite reverse}
+#s2{background:radial-gradient(ellipse 145% 125% at 0% 48%, rgba(10,36,135,.82) 0%,transparent 56%),radial-gradient(ellipse 55% 65% at 82% 88%, rgba(195,140,8,.28) 0%,transparent 50%);animation:atBreath 8s ease-in-out infinite}
+#s3{background:radial-gradient(ellipse 95% 95% at 50% 40%, rgba(175,18,18,.62) 0%,transparent 55%);animation:atBreath 10s ease-in-out infinite reverse}
+#s4{background:linear-gradient(90deg,rgba(165,14,14,.6) 0%,rgba(165,14,14,.55) 36%,transparent 55%),linear-gradient(90deg,transparent 45%,rgba(12,40,148,.55) 64%,rgba(12,40,148,.6) 100%);animation:atSplit 12s ease-in-out infinite}
+#s5{background:radial-gradient(ellipse 135% 88% at 40% 110%, rgba(198,142,6,.58) 0%,transparent 52%),radial-gradient(ellipse 58% 62% at 88% 12%, rgba(155,18,18,.35) 0%,transparent 50%);animation:atBreath 9s ease-in-out infinite}
+#s6{background:radial-gradient(ellipse 125% 98% at 6% 56%, rgba(25,108,50,.62) 0%,transparent 54%),radial-gradient(ellipse 58% 58% at 90% 22%, rgba(155,18,18,.35) 0%,transparent 50%);animation:atBreath 11s ease-in-out infinite reverse}
+#s7{background:radial-gradient(ellipse 145% 135% at 50% 52%, rgba(195,15,15,.72) 0%,transparent 58%);animation:atBreath 7s ease-in-out infinite}
+@keyframes atBreath{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+@keyframes atSplit{0%,100%{transform:scaleX(1)}50%{transform:scaleX(1.04)}}
+
+/* ── CURSOR ── */
+.c-dot{position:fixed;width:7px;height:7px;background:var(--gold-l);border-radius:50%;pointer-events:none;z-index:9999;transform:translate(-50%,-50%);box-shadow:0 0 10px 4px rgba(245,205,96,.9),0 0 28px 10px rgba(245,205,96,.3)}
+.c-ring{position:fixed;width:38px;height:38px;border:1px solid rgba(232,176,32,.42);border-radius:50%;pointer-events:none;z-index:9998;transform:translate(-50%,-50%)}
+#pbar{position:fixed;top:0;left:0;right:0;height:2px;z-index:600;transform-origin:left;transform:scaleX(0);background:linear-gradient(to right,var(--gold-b),var(--blood-b),var(--gold-b))}
+nav{position:fixed;top:0;left:0;right:0;z-index:500;padding:1rem 3rem;display:flex;justify-content:space-between;align-items:center;background:linear-gradient(to bottom,rgba(10,6,2,.97),transparent);border-bottom:1px solid rgba(201,147,10,.1);backdrop-filter:blur(8px)}
+.nav-logo{font-family:'Cinzel',serif;font-size:.68rem;letter-spacing:.25em;color:var(--gold)}
+.nav-links{display:flex;gap:2rem}
+.nav-links a{font-family:'Cinzel',serif;font-size:.57rem;letter-spacing:.18em;text-transform:uppercase;color:rgba(232,217,181,.38);text-decoration:none;transition:color .3s}
+.nav-links a:hover{color:var(--gold-l)}
+section{position:relative;z-index:5}
+
+/* ════════════════════════════════════════════
+   DRAMATIC SCROLL ANIMATIONS
+   All use class toggle (bidirectional = replay on re-scroll)
+════════════════════════════════════════════ */
+/* Clip-path wipe — text revealed horizontally */
+.wipe{clip-path:inset(0 100% 0 0);transition:clip-path 1.1s cubic-bezier(.16,1,.3,1)}
+.wipe.in{clip-path:inset(0 0% 0 0)}
+/* Clip-path from bottom — text rises through floor */
+.rise{clip-path:inset(0 0 100% 0);transition:clip-path 1.2s cubic-bezier(.16,1,.3,1)}
+.rise.in{clip-path:inset(0 0 0% 0)}
+/* Big drop with overshoot spring */
+.drop{opacity:0;transform:translateY(120px) scale(.75);transition:opacity .9s ease,transform 1.1s cubic-bezier(.34,1.5,.64,1)}
+.drop.in{opacity:1;transform:translateY(0) scale(1)}
+/* Slide from left with rotate */
+.sl{opacity:0;transform:translateX(-150px) rotate(-3deg);transition:opacity .85s ease,transform 1s cubic-bezier(.16,1,.3,1)}
+.sl.in{opacity:1;transform:translateX(0) rotate(0)}
+/* Slide from right */
+.sr{opacity:0;transform:translateX(150px) rotate(3deg);transition:opacity .85s ease,transform 1s cubic-bezier(.16,1,.3,1)}
+.sr.in{opacity:1;transform:translateX(0) rotate(0)}
+/* 3D flip in */
+.flip{opacity:0;transform:perspective(800px) rotateY(55deg) scale(.8);transition:opacity .8s ease,transform .95s cubic-bezier(.16,1,.3,1)}
+.flip.in{opacity:1;transform:perspective(800px) rotateY(0) scale(1)}
+/* Scale pop */
+.pop{opacity:0;transform:scale(.3) rotate(8deg);transition:opacity .7s ease,transform .85s cubic-bezier(.34,1.6,.64,1)}
+.pop.in{opacity:1;transform:scale(1) rotate(0)}
+/* Distant zoom in */
+.zoom{opacity:0;transform:scale(1.8) translateY(40px);filter:blur(12px);transition:opacity .9s ease,transform 1.1s cubic-bezier(.16,1,.3,1),filter .9s ease}
+.zoom.in{opacity:1;transform:scale(1) translateY(0);filter:blur(0)}
+/* Section rule */
+.rulefx{opacity:0;transform:scaleX(0) scaleY(3);transform-origin:left;transition:opacity .6s,transform .9s cubic-bezier(.16,1,.3,1)}
+.rulefx.in{opacity:.38;transform:scaleX(1) scaleY(1)}
+/* Delays */
+.d1{transition-delay:.1s}.d2{transition-delay:.22s}.d3{transition-delay:.34s}
+.d4{transition-delay:.46s}.d5{transition-delay:.58s}.d6{transition-delay:.7s}
+.d7{transition-delay:.82s}.d8{transition-delay:.94s}.d9{transition-delay:1.06s}
+.d10{transition-delay:1.18s}.d11{transition-delay:1.3s}.d12{transition-delay:1.42s}
+
+/* Section large ghost label */
+.sec-ghost{position:absolute;font-family:'Cinzel Decorative',serif;font-size:clamp(6rem,15vw,14rem);font-weight:700;color:transparent;-webkit-text-stroke:1px rgba(201,147,10,.07);pointer-events:none;user-select:none;z-index:0;white-space:nowrap}
+
+/* Shared section styles */
+.sec-label{font-family:'Cinzel',serif;font-size:.6rem;letter-spacing:.38em;color:var(--gold);text-transform:uppercase;margin-bottom:.7rem;display:block}
+.sec-title{font-family:'Cinzel Decorative',serif;font-size:clamp(1.9rem,4vw,3.6rem);font-weight:700;line-height:1.08;color:var(--parch)}
+.sec-sub{font-family:'IM Fell English',serif;font-style:italic;font-size:1.05rem;color:rgba(232,217,181,.5);margin-bottom:2.5rem;display:block}
+
+/* ═══════════ HERO ═══════════ */
+#hero{min-height:100vh;display:flex;flex-direction:column;justify-content:center;padding:8rem 4rem 5rem;position:relative;overflow:hidden}
+.h-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 35%;filter:sepia(35%) brightness(.42) contrast(1.1);will-change:transform}
+.h-ov{position:absolute;inset:0;z-index:1;background:linear-gradient(120deg,rgba(10,6,2,.85) 0%,rgba(10,6,2,.48) 50%,rgba(80,10,10,.32) 100%)}
+.h-wm{position:absolute;right:-1rem;top:50%;transform:translateY(-50%);z-index:2;font-family:'Cinzel Decorative',serif;font-size:clamp(9rem,21vw,22rem);font-weight:700;line-height:.85;color:transparent;-webkit-text-stroke:1px rgba(201,147,10,.07);pointer-events:none;user-select:none;will-change:transform}
+.h-content{position:relative;z-index:3;will-change:transform,opacity}
+.h-eye{font-family:'Cinzel',serif;font-size:.68rem;letter-spacing:.45em;color:var(--gold);text-transform:uppercase;margin-bottom:1.4rem;opacity:0;transform:translateY(30px);animation:fU .8s ease .2s forwards}
+.h-title{font-family:'Cinzel Decorative',serif;font-size:clamp(2.8rem,8.5vw,7.8rem);font-weight:700;line-height:.97;opacity:0;transform:translateY(50px) scale(.88);animation:fUS .9s ease .4s forwards}
+.h-the{font-family:'IM Fell English',serif;font-style:italic;font-size:.5em;color:var(--gold);letter-spacing:.1em;display:block;margin-bottom:.1rem}
+.h-am{color:var(--parch);display:block}
+.h-rev{color:var(--blood-b);display:block;text-shadow:0 0 80px rgba(176,30,30,.8)}
+.h-rule{width:100%;max-width:500px;height:1px;background:linear-gradient(to right,transparent,var(--gold),var(--blood),var(--gold),transparent);margin:2rem 0;opacity:0;transform:scaleX(0);transform-origin:left;animation:rR .8s ease .72s forwards}
+.h-sub{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:1.15rem;color:rgba(232,217,181,.55);font-weight:300;max-width:44ch;line-height:1.92;opacity:0;transform:translateY(30px);animation:fU .8s ease .82s forwards}
+.h-stats{margin-top:3rem;display:flex;gap:3rem;align-items:center;opacity:0;animation:fU .8s ease 1.05s forwards}
+.hst{display:flex;flex-direction:column;gap:.28rem}
+.hst-n{font-family:'Cinzel Decorative',serif;font-size:2.3rem;font-weight:700;color:var(--gold-b);line-height:1;text-shadow:0 0 22px rgba(232,176,32,.45)}
+.hst-l{font-family:'Cinzel',serif;font-size:.53rem;letter-spacing:.22em;color:rgba(160,128,80,.75);text-transform:uppercase}
+.hst-d{width:1px;height:3rem;background:rgba(201,147,10,.18);align-self:center}
+.scue{position:absolute;bottom:2.5rem;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:.5rem;z-index:3;opacity:0;animation:fU .8s ease 1.5s forwards}
+.scue span{font-family:'Cinzel',serif;font-size:.53rem;letter-spacing:.28em;color:rgba(160,128,80,.58);text-transform:uppercase}
+.sc-line{width:1px;height:50px;background:linear-gradient(to bottom,var(--gold),transparent);animation:scP 2s ease infinite}
+@keyframes fU{to{opacity:1;transform:translateY(0)}}
+@keyframes fUS{to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes rR{to{opacity:.42;transform:scaleX(1)}}
+@keyframes scP{0%,100%{opacity:.3;transform:scaleY(.5);transform-origin:top}50%{opacity:1;transform:scaleY(1);transform-origin:top}}
+
+/* ═══════════ IMAGE BANDS ═══════════ */
+.iband{height:380px;position:relative;overflow:hidden;z-index:4}
+.iband>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;filter:sepia(22%) brightness(.6) contrast(1.08);will-change:transform;transition:filter .8s}
+.iband:hover>img{filter:sepia(8%) brightness(.75)}
+.iband-fb{position:absolute;inset:0;background:linear-gradient(135deg,#1c1008,#0e1520);z-index:-1}
+.iband-ov{position:absolute;inset:0;background:linear-gradient(to bottom,rgba(10,6,2,.65) 0%,rgba(10,6,2,.04) 28%,rgba(10,6,2,.04) 72%,rgba(10,6,2,.65) 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.6rem}
+.ib-lbl{font-family:'Cinzel',serif;font-size:.6rem;letter-spacing:.38em;color:var(--gold);text-transform:uppercase;text-shadow:0 2px 10px rgba(0,0,0,.9)}
+.ib-cap{font-family:'IM Fell English',serif;font-style:italic;font-size:1.6rem;color:var(--parch);text-align:center;max-width:620px;line-height:1.45;text-shadow:0 2px 16px rgba(0,0,0,.95)}
+.ib-date{font-family:'Cinzel',serif;font-size:.55rem;letter-spacing:.2em;color:rgba(210,190,140,.72);text-transform:uppercase;text-shadow:0 1px 8px rgba(0,0,0,.9)}
+
+/* ═══════════ OVERVIEW ═══════════ */
+#overview{padding:9rem 4rem;display:grid;grid-template-columns:1fr 1fr;gap:6rem;align-items:start;border-top:1px solid rgba(201,147,10,.08)}
+.ov-body{font-size:1.1rem;line-height:2.05;color:rgba(232,217,181,.62);font-weight:300;margin-bottom:1.4rem;font-style:italic}
+.paint-blk{margin-bottom:1.4rem;position:relative;overflow:hidden;border:1px solid rgba(201,147,10,.15)}
+.paint-blk>img{width:100%;height:260px;object-fit:cover;object-position:center top;filter:sepia(22%) brightness(.7) contrast(1.08);display:block;transition:filter .6s}
+.paint-blk:hover>img{filter:sepia(8%) brightness(.85)}
+.pb-cap{padding:.9rem 1.1rem;background:rgba(10,6,2,.6);border-top:1px solid rgba(201,147,10,.12)}
+.pb-src{font-family:'Cinzel',serif;font-size:.54rem;letter-spacing:.2em;color:var(--gold);text-transform:uppercase;display:block;margin-bottom:.22rem}
+.pb-ttl{font-family:'IM Fell English',serif;font-style:italic;font-size:.93rem;color:rgba(232,217,181,.75)}
+.paint-blk-fb{background:linear-gradient(135deg,#1e1008,#121008);height:260px;display:none;align-items:center;justify-content:center}
+.paint-blk-fb span{font-family:'Cinzel',serif;font-size:.6rem;letter-spacing:.2em;color:rgba(201,147,10,.35);text-transform:uppercase;text-align:center;padding:0 1rem}
+.ink-card{border:1px solid rgba(201,147,10,.11);padding:1.4rem 1.8rem;margin-bottom:.95rem;background:rgba(201,147,10,.02);position:relative;overflow:hidden;transition:border-color .3s,background .3s,transform .3s}
+.ink-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:2px;background:linear-gradient(to bottom,var(--gold-b),var(--blood-b));opacity:0;transition:opacity .3s}
+.ink-card:hover{border-color:rgba(201,147,10,.26);background:rgba(201,147,10,.05);transform:translateX(5px)}
+.ink-card:hover::before{opacity:1}
+.ick-lbl{font-family:'Cinzel',serif;font-size:.55rem;letter-spacing:.2em;color:var(--gold);text-transform:uppercase;margin-bottom:.38rem}
+.ick-txt{font-size:.94rem;line-height:1.85;color:rgba(232,217,181,.62);font-style:italic}
+
+/* ═══════════ TIMELINE ═══════════ */
+#timeline{padding:9rem 4rem}
+.tl-hd{text-align:center;margin-bottom:5.5rem}
+.tl-wrap{max-width:920px;margin:0 auto;position:relative}
+.tl-ghost{position:absolute;left:50%;top:0;bottom:0;width:1px;transform:translateX(-50%);background:rgba(201,147,10,.1)}
+.tl-fill{position:absolute;left:50%;top:0;width:2px;height:0;transform:translateX(-50%);background:linear-gradient(to bottom,var(--gold-b),var(--blood-b),var(--gold-b));box-shadow:0 0 12px rgba(201,147,10,.6);transition:height .04s linear}
+/* Glowing pen nib at tip of spine */
+.tl-nib{position:absolute;left:50%;width:12px;height:12px;border-radius:50%;transform:translate(-50%,-50%);background:var(--gold-l);box-shadow:0 0 15px 5px rgba(245,205,96,.8),0 0 30px 12px rgba(245,205,96,.4);transition:top .04s linear;top:0;opacity:0}
+.tl-row{display:grid;grid-template-columns:1fr 60px 1fr;margin-bottom:3.5rem;align-items:start}
+.tl-row.li .tl-c{opacity:0;transform:translateX(-140px) rotate(-2deg);transition:opacity .8s ease,transform .9s cubic-bezier(.16,1,.3,1)}
+.tl-row.ri .tl-c{opacity:0;transform:translateX(140px) rotate(2deg);transition:opacity .8s ease,transform .9s cubic-bezier(.16,1,.3,1)}
+.tl-row.in .tl-c{opacity:1;transform:translateX(0) rotate(0)}
+.tl-c{padding:0 1.8rem}
+.tl-c.r{text-align:right}
+.tl-dc{display:flex;justify-content:center;padding-top:.5rem;position:relative;z-index:1}
+.tl-dot{width:14px;height:14px;border-radius:50%;border:2px solid var(--gold);transform:scale(0);transition:transform .6s cubic-bezier(.34,1.56,.64,1)}
+.tl-row.in .tl-dot{transform:scale(1)}
+.tl-dot.bl{background:var(--blood-b);border-color:var(--blood-b);box-shadow:0 0 15px rgba(176,30,30,.8)}
+.tl-dot.go{background:var(--gold-b);box-shadow:0 0 15px rgba(232,176,32,.8)}
+.tl-yr{font-family:'Cinzel',serif;font-size:.6rem;letter-spacing:.18em;color:var(--gold-b);margin-bottom:.35rem}
+.tl-ev{font-family:'IM Fell English',serif;font-size:1.1rem;color:var(--parch);margin-bottom:.3rem}
+.tl-desc{font-size:.87rem;line-height:1.85;color:rgba(232,217,181,.45);font-style:italic}
+.tl-pw{margin-top:.8rem;position:relative;overflow:hidden;border:1px solid rgba(201,147,10,.14)}
+.tl-pw>img{width:100%;height:130px;object-fit:cover;object-position:center;filter:sepia(22%) brightness(.65) contrast(1.1);display:block;transition:filter .5s}
+.tl-pw:hover>img{filter:sepia(8%) brightness(.8)}
+.tl-pw-cap{position:absolute;bottom:0;left:0;right:0;padding:.35rem .6rem;background:linear-gradient(to top,rgba(0,0,0,.75),transparent);font-family:'Cinzel',serif;font-size:.48rem;letter-spacing:.15em;color:rgba(201,147,10,.85);text-transform:uppercase}
+
+/* ═══════════ FIGURES ═══════════ */
+#figures{padding:9rem 4rem}
+.fig-tabs{display:flex;margin-bottom:2.5rem;border-bottom:1px solid rgba(201,147,10,.13);margin-top:2.5rem}
+.tab-btn{font-family:'Cinzel',serif;font-size:.58rem;letter-spacing:.18em;text-transform:uppercase;color:rgba(160,128,80,.52);background:none;border:none;padding:.85rem 2rem;cursor:none;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .3s}
+.tab-btn.active{color:var(--gold-b);border-bottom-color:var(--gold-b)}
+.tab-panel{display:none}.tab-panel.active{display:block}
+.fig-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(268px,1fr));gap:1px;background:rgba(201,147,10,.055)}
+.fig-card{background:var(--ink);padding:1.8rem;position:relative;overflow:hidden;
+  opacity:0;transform:perspective(600px) rotateY(55deg) translateY(30px) scale(.85);
+  transition:opacity .7s ease,transform .85s cubic-bezier(.16,1,.3,1),background .3s}
+.fig-card.in{opacity:1;transform:perspective(600px) rotateY(0) translateY(0) scale(1)}
+.fig-card::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--blood-b),var(--gold-b),var(--blood-b));transform:scaleX(0);transform-origin:left;transition:transform .4s}
+.fig-card:hover{background:rgba(201,147,10,.04)}.fig-card:hover::after{transform:scaleX(1)}
+.fig-name{font-family:'IM Fell English',serif;font-size:1.02rem;color:var(--parch);margin-bottom:.5rem}
+.fig-desc{font-size:.83rem;line-height:1.85;color:rgba(232,217,181,.44);font-style:italic}
+
+/* ═══════════ POWERS ═══════════ */
+#powers{padding:9rem 4rem}
+.pow-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1.4rem;margin-top:3rem}
+.pow-card{padding:1.8rem 1.4rem;border:1px solid rgba(232,217,181,.05);position:relative;overflow:hidden;background:rgba(255,255,255,.01);opacity:0}
+/* Row 1: fly from top + rotate */
+.pow-card.r1{transform:translateY(-180px) rotate(-6deg) scale(.65);transition:opacity .85s ease,transform 1s cubic-bezier(.34,1.4,.64,1)}
+/* Row 2: fly from bottom + rotate */
+.pow-card.r2{transform:translateY(180px) rotate(6deg) scale(.65);transition:opacity .85s ease,transform 1s cubic-bezier(.34,1.4,.64,1)}
+.pow-card.in{opacity:1;transform:none !important}
+.pow-card:hover{transform:translateY(-7px) !important;border-color:rgba(201,147,10,.22);box-shadow:0 22px 60px rgba(0,0,0,.5),0 0 30px rgba(201,147,10,.07)}
+.p-top{position:absolute;top:0;left:0;right:0;height:2px}
+.p-side{font-family:'Cinzel',serif;font-size:.52rem;letter-spacing:.2em;text-transform:uppercase;margin-bottom:.5rem}
+.p-name{font-family:'IM Fell English',serif;font-size:1.08rem;color:var(--parch);margin-bottom:.75rem}
+.p-desc{font-size:.82rem;line-height:1.78;color:rgba(232,217,181,.44);font-style:italic}
+.so{color:#e06060}.sa{color:#7acc8a}.sp{color:#7aabe0}.sm{color:var(--gold-b)}
+.to{background:var(--blood-b)}.ta{background:#2e7d4f}.tp{background:#1a3d6b}.tm{background:#7b5e2a}
+
+/* ═══════════ CAUSES ═══════════ */
+#causes{padding:9rem 4rem}
+.caus-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:3rem;margin-top:3rem}
+.caus-col{opacity:0}
+.caus-col.r1c{transform:translateX(-120px) translateY(80px) rotate(-4deg);transition:opacity 1.1s ease,transform 1.3s cubic-bezier(.16,1,.3,1)}
+.caus-col.r2c{transform:translateY(120px) scale(.7);transition:opacity 1.1s .15s ease,transform 1.3s .15s cubic-bezier(.16,1,.3,1)}
+.caus-col.r3c{transform:translateX(120px) translateY(80px) rotate(4deg);transition:opacity 1.1s .3s ease,transform 1.3s .3s cubic-bezier(.16,1,.3,1)}
+.caus-col.in{opacity:1;transform:none}
+.caus-col-t{font-family:'IM Fell English',serif;font-size:1.32rem;margin-bottom:1.8rem;padding-bottom:.9rem;border-bottom:1px solid rgba(201,147,10,.13);color:var(--parch)}
+.caus-col-t span{color:var(--gold-b);font-style:italic}
+.ci2{margin-bottom:1.85rem;opacity:0;transform:translateY(25px);transition:opacity .65s ease,transform .65s ease}
+.caus-col.in .ci2{opacity:1;transform:translateY(0)}
+.caus-col.in .ci2:nth-child(2){transition-delay:.2s}.caus-col.in .ci2:nth-child(3){transition-delay:.4s}.caus-col.in .ci2:nth-child(4){transition-delay:.6s}
+.caus-n{font-family:'Cinzel',serif;font-size:.52rem;color:var(--gold);letter-spacing:.15em;margin-bottom:.27rem}
+.caus-h{font-size:.92rem;font-weight:600;color:var(--parch);margin-bottom:.38rem}
+.caus-b{font-size:.84rem;line-height:1.9;color:rgba(232,217,181,.46);font-style:italic}
+
+/* ═══════════ CONSEQUENCES ═══════════ */
+#consequences{padding:9rem 4rem}
+.cons-grid{display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin-top:3rem}
+.cons-card{padding:2.4rem;border:1px solid rgba(232,217,181,.055);position:relative;overflow:hidden;transition:border-color .3s;
+  opacity:0;transform:perspective(1400px) rotateX(55deg) translateY(80px) scale(.78);
+  transition:opacity 1s ease,transform 1.15s cubic-bezier(.16,1,.3,1),border-color .3s}
+.cons-card.in{opacity:1;transform:perspective(1400px) rotateX(0) translateY(0) scale(1)}
+.cons-card:hover{border-color:rgba(201,147,10,.16);transform:translateY(-4px) !important}
+.cons-cat{font-family:'Cinzel',serif;font-size:.56rem;letter-spacing:.3em;color:var(--gold);text-transform:uppercase;margin-bottom:.55rem;display:block}
+.cons-title{font-family:'IM Fell English',serif;font-size:1.25rem;color:var(--parch);margin-bottom:1rem;padding-bottom:.6rem;border-bottom:1px solid rgba(201,147,10,.1)}
+.cons-list{list-style:none;display:flex;flex-direction:column;gap:.62rem}
+.cons-list li{font-size:.87rem;line-height:1.82;color:rgba(232,217,181,.5);font-style:italic;padding-left:1.3rem;position:relative}
+.cons-list li::before{content:'';position:absolute;left:0;top:.6em;width:7px;height:1px;background:var(--gold-b)}
+
+/* ═══════════ CLOSING ═══════════ */
+#closing{padding:11rem 4rem;text-align:center;position:relative;overflow:hidden}
+#closing>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:sepia(55%) brightness(.28) contrast(1.1);z-index:0}
+.cl-ov{position:absolute;inset:0;background:radial-gradient(ellipse at center,rgba(10,6,2,.5) 0%,rgba(10,6,2,.9) 100%);z-index:1}
+.cl-glow{position:absolute;width:700px;height:700px;border-radius:50%;background:radial-gradient(circle,rgba(150,20,20,.35) 0%,transparent 65%);top:50%;left:50%;transform:translate(-50%,-50%);animation:br 6s ease-in-out infinite;z-index:1}
+@keyframes br{0%,100%{transform:translate(-50%,-50%) scale(1)}50%{transform:translate(-50%,-50%) scale(1.1)}}
+.cl-q,.cl-at,.cl-div,.cl-nm{position:relative;z-index:2}
+.cl-q{font-family:'IM Fell English',serif;font-size:clamp(1.5rem,3.2vw,2.3rem);font-style:italic;line-height:1.62;color:var(--parch);max-width:700px;margin:0 auto 1.5rem}
+.cl-at{font-family:'Cinzel',serif;font-size:.6rem;letter-spacing:.28em;color:rgba(160,128,80,.7);text-transform:uppercase}
+.cl-div{width:80px;height:1px;background:linear-gradient(to right,transparent,var(--gold-b),transparent);margin:3rem auto;box-shadow:0 0 12px rgba(232,176,32,.44);display:block}
+.cl-nm{font-size:.88rem;color:rgba(232,217,181,.28);letter-spacing:.08em;font-style:italic}
+footer{padding:2rem 4rem;border-top:1px solid rgba(201,147,10,.08);display:flex;justify-content:space-between;align-items:center;position:relative;z-index:5}
+footer span{font-family:'Cinzel',serif;font-size:.55rem;letter-spacing:.18em;color:rgba(160,128,80,.5);text-transform:uppercase}
+::-webkit-scrollbar{width:3px}::-webkit-scrollbar-track{background:var(--ink)}::-webkit-scrollbar-thumb{background:rgba(201,147,10,.4);border-radius:2px}
+</style>
+</head>
+<body>
+
+<canvas id="bgTex"></canvas>
+<canvas id="bgFX"></canvas>
+<div class="sat" id="s0"></div>
+<div class="sat" id="s1"></div>
+<div class="sat" id="s2"></div>
+<div class="sat" id="s3"></div>
+<div class="sat" id="s4"></div>
+<div class="sat" id="s5"></div>
+<div class="sat" id="s6"></div>
+<div class="sat" id="s7"></div>
+<canvas id="trail"></canvas>
+<div class="c-dot" id="cDot"></div>
+<div class="c-ring" id="cRing"></div>
+<div id="pbar"></div>
+
+<nav>
+  <div class="nav-logo">The American Revolution · 1775–1783</div>
+  <div class="nav-links">
+    <a href="#overview">Overview</a><a href="#timeline">Timeline</a>
+    <a href="#figures">Figures</a><a href="#powers">Powers</a>
+    <a href="#causes">Causes</a><a href="#consequences">Consequences</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section id="hero">
+  <img class="h-img" id="hPaint"
+    src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/95/Washington_Crossing_the_Delaware_by_Emanuel_Leutze%2C_MMA-NYC%2C_1851.jpg/1280px-Washington_Crossing_the_Delaware_by_Emanuel_Leutze%2C_MMA-NYC%2C_1851.jpg"
+    referrerpolicy="no-referrer" alt="Washington Crossing the Delaware"
+    onerror="this.style.opacity=0">
+  <div class="h-ov"></div>
+  <div class="h-wm" id="hWm">1776</div>
+  <div class="h-content" id="hContent">
+    <div class="h-eye">A Nation Is Born &nbsp;·&nbsp; 1775–1783</div>
+    <h1 class="h-title">
+      <span class="h-the">The</span>
+      <span class="h-am">American</span>
+      <span class="h-rev">Revolution</span>
+    </h1>
+    <div class="h-rule"></div>
+    <p class="h-sub">Causes, key figures, and the lasting consequences of the most transformative act of colonial independence in modern history.</p>
+    <div class="h-stats">
+      <div class="hst"><span class="hst-n" id="c1">1775</span><span class="hst-l">War Begins</span></div>
+      <div class="hst-d"></div>
+      <div class="hst"><span class="hst-n" id="c2">13</span><span class="hst-l">Colonies</span></div>
+      <div class="hst-d"></div>
+      <div class="hst"><span class="hst-n" id="c3">1783</span><span class="hst-l">Treaty of Paris</span></div>
+      <div class="hst-d"></div>
+      <div class="hst"><span class="hst-n" id="c4">8</span><span class="hst-l">Years of War</span></div>
+    </div>
+  </div>
+  <div class="scue"><span>Continue</span><div class="sc-line"></div></div>
+</section>
+
+<!-- BAND 1 -->
+<div class="iband">
+  <div class="iband-fb"></div>
+  <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/f/f9/Declaration_of_Independence_(1819)%2C_by_John_Trumbull.jpg/1280px-Declaration_of_Independence_(1819)%2C_by_John_Trumbull.jpg"
+    referrerpolicy="no-referrer"
+    alt="Signing of the Declaration of Independence" loading="eager"
+    onerror="this.src='https://upload.wikimedia.org/wikipedia/commons/1/1c/Declaration_of_Independence_%281819%29%2C_by_John_Trumbull.jpg';this.onerror=()=>this.style.display='none'">
+  <div class="iband-ov">
+    <span class="ib-lbl">Philadelphia · 1776</span>
+    <span class="ib-cap">The Signing of the Declaration of Independence</span>
+    <span class="ib-date">July 4th, 1776</span>
+  </div>
+</div>
+
+<!-- OVERVIEW -->
+<section id="overview">
+  <div>
+    <span class="sec-label wipe">I — Overview</span>
+    <h2 class="sec-title zoom d1">What Was<br>the Revolution?</h2>
+    <div class="sec-rule rulefx d2" style="margin:1.2rem 0 2.8rem"></div>
+    <p class="ov-body sl d3">An insurrection carried out by 13 of Great Britain's North American colonies, who won political independence and formed the United States of America — the culmination of a decade of growing tensions between the colonies and the British Crown.</p>
+    <p class="ov-body sl d4">Initially a civil war within the British Empire, the conflict evolved into an international war when France joined in 1778, followed by Spain in 1779. Naval power proved decisive, enabling the French to assist in the British surrender at Yorktown in 1781.</p>
+  </div>
+  <div>
+    <div class="paint-blk sr d2">
+      <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/b/b6/Gilbert_Stuart_Williamstown_Portrait_of_George_Washington.jpg/1280px-Gilbert_Stuart_Williamstown_Portrait_of_George_Washington.jpg" referrerpolicy="no-referrer" class="pimg" style="width:100%;height:260px;object-fit:cover;object-position:center 22%;filter:sepia(18%) brightness(.72) contrast(1.08);display:block" onload="this.style.opacity='1'" onerror="if(this.dataset.t=='1'){this.src='https://upload.wikimedia.org/wikipedia/commons/thumb/b/b6/Gilbert_Stuart_Williamstown_Portrait_of_George_Washington.jpg/800px-Gilbert_Stuart_Williamstown_Portrait_of_George_Washington.jpg';this.dataset.t='2'}else if(this.dataset.t=='2'){this.src='https://upload.wikimedia.org/wikipedia/commons/thumb/b/b6/Gilbert_Stuart_Williamstown_Portrait_of_George_Washington.jpg/640px-Gilbert_Stuart_Williamstown_Portrait_of_George_Washington.jpg';this.dataset.t='3'}else{this.style.display='none';this.parentElement.querySelector('.paint-blk-fb').style.display='flex'}" data-t="1" alt="George Washington by Gilbert Stuart c.1796">
+      <div class="paint-blk-fb"><span>Gilbert Stuart · Portrait of Washington · c.1796</span></div>
+      <div class="pb-cap">
+        <span class="pb-src">Gilbert Stuart · c. 1796</span>
+        <span class="pb-ttl">George Washington — Commander-in-Chief, 1st President of the United States</span>
+      </div>
+    </div>
+    <div class="ink-card drop d3"><div class="ick-lbl">Salutary Neglect</div><div class="ick-txt">For 150+ years Britain loosely enforced trade laws allowing colonies near self-governance. After the Seven Years War, Britain abruptly tightened control, shocking colonists accustomed to independence.</div></div>
+    <div class="ink-card drop d4"><div class="ick-lbl">First Continental Congress (1774)</div><div class="ick-txt">Asserted Britain could not subdue Massachusetts without interference from all colonies. Demanded repeal of the Coercive Acts — setting the stage for armed conflict the following year.</div></div>
+  </div>
+</section>
+
+<!-- BAND 2 -->
+<div class="iband">
+  <div class="iband-fb"></div>
+  <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/95/Washington_Crossing_the_Delaware_by_Emanuel_Leutze%2C_MMA-NYC%2C_1851.jpg/1280px-Washington_Crossing_the_Delaware_by_Emanuel_Leutze%2C_MMA-NYC%2C_1851.jpg"
+    referrerpolicy="no-referrer"
+    alt="Washington Crossing the Delaware" loading="eager"
+    onerror="this.style.display='none'">
+  <div class="iband-ov">
+    <span class="ib-lbl">Delaware River · Christmas Night, 1776</span>
+    <span class="ib-cap">Washington Crossing the Delaware</span>
+    <span class="ib-date">Emanuel Leutze · 1851 · Metropolitan Museum of Art, New York</span>
+  </div>
+</div>
+
+<!-- TIMELINE -->
+<section id="timeline">
+  <div class="tl-hd">
+    <span class="sec-label wipe">II — Timeline</span>
+    <h2 class="sec-title zoom d1" style="text-align:center">Key Events of the Revolution</h2>
+    <div class="sec-rule rulefx d2" style="max-width:280px;margin:1.2rem auto 0"></div>
+  </div>
+  <div class="tl-wrap" id="tlWrap">
+    <div class="tl-ghost"></div>
+    <div class="tl-fill" id="tlFill"></div>
+    <div class="tl-nib" id="tlNib"></div>
+    <div class="tl-row li"><div class="tl-c"><div class="tl-yr">1765 – 1773</div><div class="tl-ev">The Taxation Acts</div><div class="tl-desc">Stamp Act, Townshend Acts, Tea Act — all imposed without colonial representation. "No taxation without representation" became the rallying cry of the Patriot movement.</div></div><div class="tl-dc"><div class="tl-dot bl"></div></div><div></div></div>
+    <div class="tl-row ri"><div></div><div class="tl-dc"><div class="tl-dot go"></div></div>
+      <div class="tl-c r"><div class="tl-yr">March 5, 1770</div><div class="tl-ev">Boston Massacre</div><div class="tl-desc">British soldiers killed 5 colonists on King Street. Paul Revere's famous engraving spread outrage across all colonies.</div>
+        <div class="tl-pw"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/b/bb/The_Bloody_Massacre_perpetrated_in_King-Street_Boston.jpg/1280px-The_Bloody_Massacre_perpetrated_in_King-Street_Boston.jpg" referrerpolicy="no-referrer" class="pimg" onload="this.classList.add('loaded')" onerror="if(this.dataset.t=='1'){this.src='https://upload.wikimedia.org/wikipedia/commons/thumb/b/bb/The_Bloody_Massacre_perpetrated_in_King-Street_Boston.jpg/1024px-The_Bloody_Massacre_perpetrated_in_King-Street_Boston.jpg';this.dataset.t='2'}else if(this.dataset.t=='2'){this.src='https://upload.wikimedia.org/wikipedia/commons/thumb/b/bb/The_Bloody_Massacre_perpetrated_in_King-Street_Boston.jpg/800px-The_Bloody_Massacre_perpetrated_in_King-Street_Boston.jpg';this.dataset.t='3'}else{this.style.display='none'}" data-t="1" alt="Paul Revere Boston Massacre 1770"><div class="tl-pw-cap">Paul Revere's Engraving · 1770</div></div>
+      </div>
+    </div>
+    <div class="tl-row li"><div class="tl-c"><div class="tl-yr">December 1773</div><div class="tl-ev">Boston Tea Party</div><div class="tl-desc">Colonists dumped an entire British tea shipment into Boston Harbor. Britain responded with the Coercive Acts, deepening colonial resistance.</div></div><div class="tl-dc"><div class="tl-dot bl"></div></div><div></div></div>
+    <div class="tl-row ri"><div></div><div class="tl-dc"><div class="tl-dot go"></div></div><div class="tl-c r"><div class="tl-yr">April 19, 1775</div><div class="tl-ev">Lexington & Concord</div><div class="tl-desc">The first shots of the Revolutionary War. The shot heard round the world — eight years of conflict had begun.</div></div></div>
+    <div class="tl-row li"><div class="tl-c"><div class="tl-yr">July 4, 1776</div><div class="tl-ev">Declaration of Independence</div><div class="tl-desc">Formal separation of the 13 colonies from Great Britain, drafted primarily by Thomas Jefferson.</div></div><div class="tl-dc"><div class="tl-dot bl"></div></div><div></div></div>
+    <div class="tl-row ri"><div></div><div class="tl-dc"><div class="tl-dot go"></div></div><div class="tl-c r"><div class="tl-yr">October 1777</div><div class="tl-ev">Battle of Saratoga</div><div class="tl-desc">Decisive American victory. Burgoyne's entire army forced to surrender — convincing France to formally ally with the colonies.</div></div></div>
+    <div class="tl-row li"><div class="tl-c"><div class="tl-yr">1778 – 1779</div><div class="tl-ev">France & Spain Enter</div><div class="tl-desc">France joins via Treaty of Alliance. Spain follows as French ally. The colonial civil war becomes a global conflict.</div></div><div class="tl-dc"><div class="tl-dot bl"></div></div><div></div></div>
+    <div class="tl-row ri"><div></div><div class="tl-dc"><div class="tl-dot go"></div></div>
+      <div class="tl-c r"><div class="tl-yr">October 19, 1781</div><div class="tl-ev">Yorktown — The Surrender</div><div class="tl-desc">Cornwallis surrenders to Washington. French naval power at the Chesapeake proved decisive. The war effectively ends.</div>
+        <div class="tl-pw"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/b/b8/Surrender_of_Lord_Cornwallis.jpg/1280px-Surrender_of_Lord_Cornwallis.jpg" referrerpolicy="no-referrer" class="pimg" onload="this.classList.add('loaded')" onerror="if(this.dataset.t=='1'){this.src='https://upload.wikimedia.org/wikipedia/commons/thumb/b/b8/Surrender_of_Lord_Cornwallis.jpg/1024px-Surrender_of_Lord_Cornwallis.jpg';this.dataset.t='2'}else if(this.dataset.t=='2'){this.src='https://upload.wikimedia.org/wikipedia/commons/thumb/b/b8/Surrender_of_Lord_Cornwallis.jpg/800px-Surrender_of_Lord_Cornwallis.jpg';this.dataset.t='3'}else{this.style.display='none'}" data-t="1" alt="Surrender Cornwallis Trumbull 1820"><div class="tl-pw-cap">John Trumbull · 1820 · U.S. Capitol</div></div>
+      </div>
+    </div>
+    <div class="tl-row li"><div class="tl-c"><div class="tl-yr">September 3, 1783</div><div class="tl-ev">Treaty of Paris</div><div class="tl-desc">Official peace treaty signed. Great Britain formally recognizes the independence of the United States of America.</div></div><div class="tl-dc"><div class="tl-dot go"></div></div><div></div></div>
+  </div>
+</section>
+
+<!-- BAND 3 -->
+<div class="iband">
+  <div class="iband-fb"></div>
+  <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/b/b8/Surrender_of_Lord_Cornwallis.jpg/1280px-Surrender_of_Lord_Cornwallis.jpg"
+    referrerpolicy="no-referrer"
+    alt="Surrender of Lord Cornwallis by Trumbull" loading="eager"
+    onerror="this.src='https://upload.wikimedia.org/wikipedia/commons/2/2e/Surrender_of_Lord_Cornwallis.jpg';this.onerror=()=>this.style.display='none'">
+  <div class="iband-ov">
+    <span class="ib-lbl">Yorktown, Virginia</span>
+    <span class="ib-cap">The Surrender of Lord Cornwallis</span>
+    <span class="ib-date">John Trumbull · 1820 · United States Capitol Rotunda</span>
+  </div>
+</div>
+
+<!-- FIGURES -->
+<section id="figures">
+  <span class="sec-label wipe">III — Key Figures</span>
+  <h2 class="sec-title zoom d1">The People Who Shaped It</h2>
+  <div class="sec-rule rulefx d2" style="margin:1.2rem 0 2.5rem"></div>
+  <div class="fig-tabs">
+    <button class="tab-btn active" onclick="switchTab('patriots')">Patriot Leaders</button>
+    <button class="tab-btn" onclick="switchTab('allies')">Foreign Allies</button>
+    <button class="tab-btn" onclick="switchTab('british')">British Leaders</button>
+  </div>
+  <div class="tab-panel active" id="tab-patriots"><div class="fig-grid">
+    <div class="fig-card"><div class="fig-name">George Washington</div><div class="fig-desc">Commander-in-Chief of the Continental Army. Won key victories at Boston, Trenton, Princeton & Yorktown. First president of the United States.</div></div>
+    <div class="fig-card"><div class="fig-name">Thomas Jefferson</div><div class="fig-desc">Primary author of the Declaration of Independence. Governor of Virginia, later 3rd president of the United States.</div></div>
+    <div class="fig-card"><div class="fig-name">Benjamin Franklin</div><div class="fig-desc">Diplomat in France. Lobbied for French support and helped secure the Treaty of Alliance. Senior member of the committee drafting the Declaration.</div></div>
+    <div class="fig-card"><div class="fig-name">John Adams</div><div class="fig-desc">Opposed the Stamp Act. Helped draft the Declaration. Negotiated the Treaty of Paris. Later the 2nd president of the United States.</div></div>
+    <div class="fig-card"><div class="fig-name">Thomas Paine</div><div class="fig-desc">Author of Common Sense (1776), an unprecedented bestseller that convinced countless colonists to embrace independence from Britain.</div></div>
+    <div class="fig-card"><div class="fig-name">Marquis de Lafayette</div><div class="fig-desc">French aristocrat who arrived in America at 19. Became one of Washington's most trusted generals and a key rallier of French military support.</div></div>
+    <div class="fig-card"><div class="fig-name">Benedict Arnold</div><div class="fig-desc">Skilled Continental commander at Ticonderoga, Quebec & Saratoga. Wounded twice, later defected to the British Army in 1780.</div></div>
+    <div class="fig-card"><div class="fig-name">Nathanael Greene</div><div class="fig-desc">Shifted from pacifist to commander. Criticized Congress for relying on short-term militiamen who lacked the fortitude for sustained warfare.</div></div>
+    <div class="fig-card"><div class="fig-name">Horatio Gates</div><div class="fig-desc">Forced Burgoyne to surrender at Saratoga (1777). Later disgraced at the Battle of Camden (1780).</div></div>
+    <div class="fig-card"><div class="fig-name">Henry Knox</div><div class="fig-desc">Transported 55 cannons 300 miles from Fort Ticonderoga to Cambridge. Commanded Continental Army artillery throughout the war.</div></div>
+    <div class="fig-card"><div class="fig-name">Daniel Morgan</div><div class="fig-desc">Frontiersman commander. Won the decisive victory over Banastre Tarleton at the Battle of Cowpens.</div></div>
+    <div class="fig-card"><div class="fig-name">John Sullivan</div><div class="fig-desc">General in multiple major campaigns, including a devastating campaign against Seneca & Cayuga nations on Washington's direct orders in 1779.</div></div>
+  </div></div>
+  <div class="tab-panel" id="tab-allies"><div class="fig-grid">
+    <div class="fig-card"><div class="fig-name">Rochambeau</div><div class="fig-desc">Commander of French Army forces. Marched to Virginia with Washington. His expertise in siege warfare proved essential at Yorktown.</div></div>
+    <div class="fig-card"><div class="fig-name">Friedrich von Steuben</div><div class="fig-desc">Prussian "Drillmaster of the Revolution." Transformed the Continental Army at Valley Forge. Taught marching, bayonet use, and musket firing.</div></div>
+    <div class="fig-card"><div class="fig-name">John Glover</div><div class="fig-desc">Evacuated Washington's army across the East River after Long Island. Rowed troops across the icy Delaware on Christmas Night, 1776.</div></div>
+    <div class="fig-card"><div class="fig-name">John Paul Jones</div><div class="fig-desc">Scottish-born naval commander. Defeated HMS Serapis at Flamborough Head. Often called the "Father of the American Navy."</div></div>
+    <div class="fig-card"><div class="fig-name">Bernardo de Galvez</div><div class="fig-desc">Spanish Governor of Louisiana. Seized Baton Rouge, Natchez, Mobile, and Pensacola. Honorary U.S. citizen. Galveston, Texas named for him.</div></div>
+  </div></div>
+  <div class="tab-panel" id="tab-british"><div class="fig-grid">
+    <div class="fig-card"><div class="fig-name">George III</div><div class="fig-desc">King of Britain for 59 years. Backed taxation policies, hired Hessian mercenaries, declared the colonies in a state of rebellion in 1775.</div></div>
+    <div class="fig-card"><div class="fig-name">Henry Clinton</div><div class="fig-desc">Commander-in-Chief from 1778. Failed to reinforce Cornwallis at Yorktown. Bore much of the blame for Britain's defeat.</div></div>
+    <div class="fig-card"><div class="fig-name">Charles Cornwallis</div><div class="fig-desc">Led the British Southern campaign. Won at Camden. Surrendered at Yorktown on October 19, 1781, effectively ending the war.</div></div>
+    <div class="fig-card"><div class="fig-name">William Howe</div><div class="fig-desc">Commander-in-Chief 1775-78. Won Bunker Hill, Long Island, and Philadelphia. His march on Philadelphia contributed to the disaster at Saratoga.</div></div>
+    <div class="fig-card"><div class="fig-name">John Burgoyne</div><div class="fig-desc">"Gentleman Johnny." Led 1777 invasion from Canada. Abandoned without reinforcements, surrendered at Saratoga, triggering the French alliance.</div></div>
+    <div class="fig-card"><div class="fig-name">Richard Howe</div><div class="fig-desc">Admiral, brother of William. Commanded Royal Navy North America. Attempted peace negotiations before fighting began. Resigned 1778.</div></div>
+    <div class="fig-card"><div class="fig-name">Lord Dunmore</div><div class="fig-desc">Last royal Governor of Virginia. His 1775 proclamation offering freedom to enslaved Patriots who joined the British backfired politically.</div></div>
+  </div></div>
+</section>
+
+<!-- POWERS -->
+<section id="powers">
+  <span class="sec-label wipe">IV — Major Powers</span>
+  <h2 class="sec-title zoom d1">Who Was Involved?</h2>
+  <div class="sec-rule rulefx d2" style="margin:1.2rem 0 3rem"></div>
+  <div class="pow-grid">
+    <div class="pow-card r1 d1"><div class="p-top to"></div><div class="p-side so">Opposing</div><div class="p-name">Great Britain</div><div class="p-desc">Primary colonial power. British Army and Royal Navy. ~30,000 Hessian mercenaries. 15-20% Loyalist colonists formed militias.</div></div>
+    <div class="pow-card r1 d2"><div class="p-top tp"></div><div class="p-side sp">Patriot</div><div class="p-name">The 13 Colonies</div><div class="p-desc">Declared independence July 4, 1776. Continental Army under Washington. Initially a civil war before becoming an international conflict.</div></div>
+    <div class="pow-card r1 d3"><div class="p-top ta"></div><div class="p-side sa">Allied</div><div class="p-name">France</div><div class="p-desc">Most important ally. Treaty of Alliance 1778 after Saratoga. Motivated by revenge for Seven Years War losses. Decisive at Yorktown.</div></div>
+    <div class="pow-card r1 d4"><div class="p-top ta"></div><div class="p-side sa">Allied</div><div class="p-name">Spain</div><div class="p-desc">Entered 1779 as French ally. Recaptured Baton Rouge, Natchez, Mobile & Pensacola. Opened supply routes through New Orleans.</div></div>
+    <div class="pow-card r2 d1"><div class="p-top ta"></div><div class="p-side sa">Allied</div><div class="p-name">Dutch Republic</div><div class="p-desc">Dutch merchants supplied loans before official entry (1780). St. Eustatius gave the first international salute to the American flag in 1776.</div></div>
+    <div class="pow-card r2 d2"><div class="p-top to"></div><div class="p-side so">Opposing</div><div class="p-name">Hessians</div><div class="p-desc">~30,000 German soldiers leased to Britain. Roughly 1 in 4 of British forces. Targeted by Washington at Trenton, Christmas 1776.</div></div>
+    <div class="pow-card r2 d3"><div class="p-top tm"></div><div class="p-side sm">Mixed</div><div class="p-name">Native Nations</div><div class="p-desc">Most sided with Britain. Iroquois split: Mohawk/Seneca to British; Oneida/Tuscarora to Patriots. All suffered devastating losses.</div></div>
+    <div class="pow-card r2 d4"><div class="p-top to"></div><div class="p-side so">Opposing</div><div class="p-name">Loyalists</div><div class="p-desc">15-20% of colonists. Formed Provincial Corps and militias. ~60-80k fled to Canada or Britain after the war ended.</div></div>
+  </div>
+</section>
+
+<!-- CAUSES -->
+<section id="causes">
+  <span class="sec-label wipe">V — Driving Factors</span>
+  <h2 class="sec-title zoom d1">What Caused the Revolution?</h2>
+  <div class="sec-rule rulefx d2" style="margin:1.2rem 0 3rem"></div>
+  <div class="caus-grid">
+    <div class="caus-col r1c">
+      <div class="caus-col-t"><span>Economic</span> Causes</div>
+      <div class="ci2"><div class="caus-n">I</div><div class="caus-h">End of Salutary Neglect</div><div class="caus-b">For 150+ years Britain loosely enforced trade laws, allowing near self-governance. After the Seven Years War, Britain demanded the colonies fund their own defense.</div></div>
+      <div class="ci2"><div class="caus-n">II</div><div class="caus-h">Navigation Acts (1651)</div><div class="caus-b">Restricted colonial trade exclusively to England — a long-standing grievance that set the stage for later taxation conflicts.</div></div>
+      <div class="ci2"><div class="caus-n">III</div><div class="caus-h">Post-War Debt</div><div class="caus-b">Britain's massive Seven Years War debt led to taxing the colonies, who felt they had already contributed enough to the war effort.</div></div>
+    </div>
+    <div class="caus-col r2c">
+      <div class="caus-col-t"><span>Political</span> Causes</div>
+      <div class="ci2"><div class="caus-n">I</div><div class="caus-h">Taxation Without Representation</div><div class="caus-b">Stamp Act (1765), Townshend Acts (1767), Tea Act (1773) imposed without colonial seats in Parliament. "No taxation without representation" became the rallying cry.</div></div>
+      <div class="ci2"><div class="caus-n">II</div><div class="caus-h">Boston Massacre & Tea Party</div><div class="caus-b">1770: British soldiers killed 5 colonists. 1773: Colonists dumped British tea in Boston Harbor. Britain responded with the Intolerable Acts.</div></div>
+      <div class="ci2"><div class="caus-n">III</div><div class="caus-h">First Continental Congress</div><div class="caus-b">Colonies united as a single body for the first time in 1774. Asserted Britain could not subdue Massachusetts alone. Demanded repeal of the Coercive Acts.</div></div>
+    </div>
+    <div class="caus-col r3c">
+      <div class="caus-col-t"><span>Ideological</span> Causes</div>
+      <div class="ci2"><div class="caus-n">I</div><div class="caus-h">Enlightenment Ideas</div><div class="caus-b">John Locke argued governments derive power from consent of the governed and people have the right to overthrow unjust rulers — deeply influencing colonial leaders.</div></div>
+      <div class="ci2"><div class="caus-n">II</div><div class="caus-h">Growing Cultural Divide</div><div class="caus-b">A widening split between British and American identities eroded colonial loyalty to the Crown. Americans increasingly saw themselves as a distinct people.</div></div>
+      <div class="ci2"><div class="caus-n">III</div><div class="caus-h">Common Sense (1776)</div><div class="caus-b">Thomas Paine's unprecedented bestseller directly called for independence. Denounced King George III and swayed countless fence-sitting colonists to the Patriot cause.</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- CONSEQUENCES -->
+<section id="consequences">
+  <span class="sec-label wipe">VI — Consequences</span>
+  <h2 class="sec-title zoom d1">What Did It Change?</h2>
+  <div class="sec-rule rulefx d2" style="margin:1.2rem 0 3rem"></div>
+  <div class="cons-grid">
+    <div class="cons-card d1"><span class="cons-cat">Political Impact</span><div class="cons-title">The Birth of a Republic</div><ul class="cons-list"><li>Victory led to the drafting of the U.S. Constitution</li><li>Popularized concepts of rights, sovereignty, and separation of powers</li><li>Demonstrated a colony could successfully overthrow an empire</li><li>Directly inspired the French Revolution and global independence movements</li></ul></div>
+    <div class="cons-card d2"><span class="cons-cat">Social Impact</span><div class="cons-title">Freedom's Contradictions</div><ul class="cons-list"><li>Profound slavery paradox: northern states began abolishing it while the southern economy became dependent on it, setting stage for the Civil War</li><li>Removal of British protection opened the frontier to unchecked expansion, resulting in hostile policies against Indigenous peoples</li><li>Elevated importance of female education to raise informed citizens</li></ul></div>
+    <div class="cons-card d3"><span class="cons-cat">Economic Impact</span><div class="cons-title">A New Commercial Order</div><ul class="cons-list"><li>Freed the nation from British mercantilism</li><li>The U.S. forged new international trade routes and developed independent domestic manufacturing</li><li>The Revolution left the central government and states with extreme debt</li><li>Caused short-term instability and domestic uprisings including Shays Rebellion</li></ul></div>
+    <div class="cons-card d4"><span class="cons-cat">Global Legacy</span><div class="cons-title">The World Remade</div><ul class="cons-list"><li>Proved that Enlightenment ideals could be put into governing practice</li><li>The U.S. Constitution became a model for democratic governance worldwide</li><li>The French Revolution (1789) was directly inspired by the American example</li><li>Sparked independence movements across Latin America and beyond</li></ul></div>
+  </div>
+</section>
+
+<!-- CLOSING -->
+<section id="closing">
+  <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/f/f9/Declaration_of_Independence_(1819)%2C_by_John_Trumbull.jpg/1280px-Declaration_of_Independence_(1819)%2C_by_John_Trumbull.jpg"
+    referrerpolicy="no-referrer"
+    alt="Declaration of Independence by John Trumbull"
+    onerror="this.style.opacity=0">
+  <div class="cl-ov"></div><div class="cl-glow"></div>
+  <p class="cl-q drop">"The cause of America is in a great measure the cause of all mankind."</p>
+  <div class="cl-at drop d1">Thomas Paine &nbsp;·&nbsp; Common Sense, 1776</div>
+  <div class="cl-div drop d2"></div>
+  <p class="cl-nm drop d2">Hanson Liu & Noah Muller &nbsp;·&nbsp; 9th Grade &nbsp;·&nbsp; Revolution Investigation</p>
+</section>
+<footer><span>The American Revolution &nbsp;·&nbsp; 1775–1783</span><span>Hanson Liu & Noah Muller &nbsp;·&nbsp; 9th Grade</span></footer>
+
+<script>
+// ══════════════════════════════════════════════
+// BACKGROUND TEXTURE CANVAS (draw once)
+// ══════════════════════════════════════════════
+const btC=document.getElementById('bgTex'),btX=btC.getContext('2d');
+function drawTex(){
+  const W=btC.width=window.innerWidth,H=btC.height=window.innerHeight;
+  // Warm brownish base — visibly NOT black
+  const gb=btX.createLinearGradient(0,0,W,H);
+  gb.addColorStop(0,'#241608');gb.addColorStop(.5,'#1e1208');gb.addColorStop(1,'#1a1008');
+  btX.fillStyle=gb;btX.fillRect(0,0,W,H);
+  // Map grid
+  btX.strokeStyle='rgba(201,147,10,0.065)';btX.lineWidth=.55;
+  for(let x=0;x<W;x+=90){btX.beginPath();btX.moveTo(x,0);btX.lineTo(x,H);btX.stroke()}
+  for(let y=0;y<H;y+=90){btX.beginPath();btX.moveTo(0,y);btX.lineTo(W,y);btX.stroke()}
+  btX.strokeStyle='rgba(201,147,10,0.025)';btX.lineWidth=.32;
+  for(let i=-H;i<W+H;i+=55){btX.beginPath();btX.moveTo(i,0);btX.lineTo(i+H,H);btX.stroke()}
+  // Compass rose
+  const cx=W*.87,cy=130,cr=46;
+  btX.strokeStyle='rgba(201,147,10,0.1)';btX.lineWidth=.75;
+  btX.beginPath();btX.arc(cx,cy,cr,0,Math.PI*2);btX.stroke();
+  btX.beginPath();btX.arc(cx,cy,cr*.58,0,Math.PI*2);btX.stroke();
+  [0,45,90,135,180,225,270,315].forEach(a=>{
+    const r=a*Math.PI/180,r2=a%90===0?cr*1.3:cr*1.1;
+    btX.beginPath();btX.moveTo(cx+Math.cos(r)*cr*.18,cy+Math.sin(r)*cr*.18);
+    btX.lineTo(cx+Math.cos(r)*r2,cy+Math.sin(r)*r2);btX.stroke();
+  });
+  // Grain
+  for(let i=0;i<W*H/450;i++){btX.fillStyle=`rgba(201,147,10,${Math.random()*.045})`;btX.fillRect(Math.random()*W,Math.random()*H,1,1)}
+  // Corner vignette
+  [[0,0],[W,0],[0,H],[W,H]].forEach(([px,py])=>{
+    const vg=btX.createRadialGradient(px,py,0,px,py,Math.max(W,H)*.55);
+    vg.addColorStop(0,'rgba(0,0,0,0.55)');vg.addColorStop(1,'transparent');
+    btX.fillStyle=vg;btX.fillRect(0,0,W,H);
+  });
+}
+drawTex();window.addEventListener('resize',drawTex);
+
+// ══════════════════════════════════════════════
+// ANIMATED BG CANVAS — cursor lantern + moving shapes
+// ══════════════════════════════════════════════
+const bfC=document.getElementById('bgFX'),bfX=bfC.getContext('2d');
+let BW=bfC.width=innerWidth,BH=bfC.height=innerHeight;
+window.addEventListener('resize',()=>{BW=bfC.width=innerWidth;BH=bfC.height=innerHeight});
+let lx=BW/2,ly=BH/2,tlx=BW/2,tly=BH/2;
+document.addEventListener('mousemove',e=>{tlx=e.clientX;tly=e.clientY});
+
+// Animated floating shapes — always in motion
+const shapes=[
+  {x:.2,y:.3,r:280,dx:.00015,dy:.0002,c:[201,147,10]},
+  {x:.8,y:.7,r:320,dx:-.0002,dy:.00015,c:[107,16,16]},
+  {x:.5,y:.5,r:250,dx:.00018,dy:-.00018,c:[20,50,130]},
+  {x:.1,y:.8,r:220,dx:.0002,dy:-.0001,c:[201,147,10]},
+  {x:.9,y:.2,r:260,dx:-.00015,dy:.0002,c:[107,16,16]},
+];
+let animT=0;
+function drawFX(){
+  animT+=0.5;
+  const W=BW,H=BH;
+  bfX.clearRect(0,0,W,H);
+  lx+=(tlx-lx)*.05;ly+=(tly-ly)*.05;
+
+  // Gently oscillating ambient shapes — always visible
+  shapes.forEach(s=>{
+    const px=(s.x+Math.sin(animT*s.dx*1000)*0.12)*W;
+    const py=(s.y+Math.cos(animT*s.dy*1000)*0.1)*H;
+    const rg=bfX.createRadialGradient(px,py,0,px,py,s.r);
+    rg.addColorStop(0,`rgba(${s.c},0.055)`);rg.addColorStop(1,'transparent');
+    bfX.fillStyle=rg;bfX.fillRect(0,0,W,H);
+  });
+
+  // CURSOR LANTERN — very prominent warm gold
+  const lan=bfX.createRadialGradient(lx,ly,0,lx,ly,500);
+  lan.addColorStop(0,'rgba(218,168,22,0.42)');
+  lan.addColorStop(0.15,'rgba(200,115,20,0.22)');
+  lan.addColorStop(0.45,'rgba(130,18,18,0.12)');
+  lan.addColorStop(1,'transparent');
+  bfX.fillStyle=lan;bfX.fillRect(0,0,W,H);
+
+  // Grid lines that GLOW near cursor — very visible
+  const gs=90;
+  for(let x=0;x<W;x+=gs){
+    const d=Math.abs(x-lx);
+    if(d<300){const g=(1-d/300)*.32;bfX.strokeStyle=`rgba(218,168,22,${g})`;bfX.lineWidth=(1-d/300)*3.2;bfX.beginPath();bfX.moveTo(x,0);bfX.lineTo(x,H);bfX.stroke()}
+  }
+  for(let y=0;y<H;y+=gs){
+    const d=Math.abs(y-ly);
+    if(d<300){const g=(1-d/300)*.32;bfX.strokeStyle=`rgba(218,168,22,${g})`;bfX.lineWidth=(1-d/300)*3.2;bfX.beginPath();bfX.moveTo(0,y);bfX.lineTo(W,y);bfX.stroke()}
+  }
+
+  // Diagonal light beams emanating from cursor
+  const beams=[[45],[135],[225],[315]];
+  beams.forEach(([a])=>{
+    const rad=a*Math.PI/180;
+    const len=400;
+    const grd=bfX.createLinearGradient(lx,ly,lx+Math.cos(rad)*len,ly+Math.sin(rad)*len);
+    grd.addColorStop(0,'rgba(218,168,22,0.08)');grd.addColorStop(1,'transparent');
+    bfX.strokeStyle=grd;bfX.lineWidth=1;
+    bfX.beginPath();bfX.moveTo(lx,ly);bfX.lineTo(lx+Math.cos(rad)*len,ly+Math.sin(rad)*len);bfX.stroke();
+  });
+
+  requestAnimationFrame(drawFX);
+}
+drawFX();
+
+// ══════════════════════════════════════════════
+// SECTION ATMOSPHERE
+// ══════════════════════════════════════════════
+const sMap={'hero':'s0','overview':'s1','timeline':'s2','figures':'s3','powers':'s4','causes':'s5','consequences':'s6','closing':'s7'};
+let activeS=null;
+function detectSec(){
+  const ids=['closing','consequences','causes','powers','figures','timeline','overview','hero'];
+  for(const id of ids){
+    const el=document.getElementById(id);
+    if(el&&el.getBoundingClientRect().top<=innerHeight*.52){
+      const sid=sMap[id];
+      if(sid!==activeS){
+        if(activeS){const p=document.getElementById(activeS);if(p)p.classList.remove('on')}
+        const n=document.getElementById(sid);if(n)n.classList.add('on');
+        activeS=sid;
+      }
+      return;
+    }
+  }
+}
+detectSec();window.addEventListener('scroll',detectSec,{passive:true});setInterval(detectSec,350);
+
+// ══════════════════════════════════════════════
+// EMBER TRAIL
+// ══════════════════════════════════════════════
+const tc=document.getElementById('trail'),tctx=tc.getContext('2d');
+let TW=tc.width=innerWidth,TH=tc.height=innerHeight;
+window.addEventListener('resize',()=>{TW=tc.width=innerWidth;TH=tc.height=innerHeight});
+let mx=TW/2,my=TH/2;
+document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY});
+const embers=[];
+class Ember{
+  constructor(x,y){
+    this.x=x+(Math.random()-.5)*5;this.y=y+(Math.random()-.5)*5;
+    this.r=Math.random()*4.5+1.5;this.vx=(Math.random()-.5)*2.2;
+    this.vy=(Math.random()-.5)*1.8-.9;this.life=1;this.decay=Math.random()*.022+.01;
+    const p=[[248,210,90],[225,138,28],[188,68,22],[145,20,20],[255,205,70]];
+    this.c=p[Math.floor(Math.random()*p.length)];
+  }
+  tick(){this.x+=this.vx;this.y+=this.vy;this.vy+=.03;this.vx*=.986;this.r*=.968;this.life-=this.decay}
+  draw(){
+    if(this.life<=0||this.r<.1)return;
+    tctx.save();tctx.globalAlpha=Math.max(0,this.life)*.75;
+    tctx.shadowBlur=16;tctx.shadowColor=`rgba(${this.c},0.9)`;
+    tctx.fillStyle=`rgb(${this.c})`;
+    tctx.beginPath();tctx.arc(this.x,this.y,this.r,0,Math.PI*2);tctx.fill();tctx.restore();
+  }
+}
+let ef=0;
+(function eloop(){
+  tctx.clearRect(0,0,TW,TH);ef++;
+  if(ef%2===0)for(let i=0;i<8;i++)embers.push(new Ember(mx,my));
+  for(let i=embers.length-1;i>=0;i--){embers[i].tick();embers[i].draw();if(embers[i].life<=0||embers[i].r<.1)embers.splice(i,1)}
+  requestAnimationFrame(eloop);
+})();
+
+// ══════════════════════════════════════════════
+// CURSOR
+// ══════════════════════════════════════════════
+const dot=document.getElementById('cDot'),ring=document.getElementById('cRing');
+let rx=TW/2,ry=TH/2;
+document.addEventListener('mousemove',e=>{dot.style.left=e.clientX+'px';dot.style.top=e.clientY+'px'});
+(function cr(){rx+=(mx-rx)*.1;ry+=(my-ry)*.1;ring.style.left=rx+'px';ring.style.top=ry+'px';requestAnimationFrame(cr)})();
+
+// ══════════════════════════════════════════════
+// PROGRESS BAR
+// ══════════════════════════════════════════════
+const pbar=document.getElementById('pbar');
+function upPbar(){const m=document.documentElement.scrollHeight-innerHeight;pbar.style.transform=`scaleX(${scrollY/Math.max(1,m)})`}
+
+// ══════════════════════════════════════════════
+// SCROLL-DRIVEN HERO EXIT — continuous, based on scrollY
+// ══════════════════════════════════════════════
+function upHero(){
+  const hc=document.getElementById('hContent');
+  const hw=document.getElementById('hWm');
+  const hp=document.getElementById('hPaint');
+  const y=scrollY,h=innerHeight;
+  const p=Math.min(1,y/(h*.9));
+  if(hc){hc.style.transform=`translateY(${-y*.38}px) scale(${1-p*.22})`;hc.style.opacity=Math.max(0,1-p*1.4)}
+  if(hw){hw.style.transform=`translateY(calc(-50% + ${y*.2}px)) scale(${1+p*.5})`;hw.style.opacity=Math.max(0,(.1-p*.1))}
+  if(hp){hp.style.transform=`scale(${1.08+p*.08}) translateY(${y*.28}px)`}
+}
+
+// ══════════════════════════════════════════════
+// PARALLAX — image bands + iband images
+// ══════════════════════════════════════════════
+function upParallax(){
+  document.querySelectorAll('.iband>img').forEach(img=>{
+    const r=img.parentElement.getBoundingClientRect();
+    const off=(innerHeight*.5-(r.top+r.height*.5))*.18;
+    img.style.transform=`scale(1.18) translateY(${off}px)`;
+  });
+}
+
+// ══════════════════════════════════════════════
+// TIMELINE SPINE — draw nib + sync events
+// ══════════════════════════════════════════════
+const tlW=document.getElementById('tlWrap'),tlF=document.getElementById('tlFill'),tlN=document.getElementById('tlNib');
+function upTimeline(){
+  if(!tlW||!tlF)return;
+  const r=tlW.getBoundingClientRect(),trig=innerHeight*.72;
+  if(r.top<trig){
+    const pct=Math.min(1,Math.max(0,(trig-r.top)/r.height));
+    const h=pct*r.height;
+    tlF.style.height=h+'px';
+    if(tlN){tlN.style.top=h+'px';tlN.style.opacity=pct>0&&pct<.99?'1':'0'}
+    document.querySelectorAll('.tl-row').forEach(row=>{
+      const rr=row.getBoundingClientRect();
+      row.classList.toggle('in',rr.top<trig+50);
+    });
+  } else {
+    tlF.style.height='0';if(tlN)tlN.style.opacity='0';
+    document.querySelectorAll('.tl-row').forEach(r2=>r2.classList.remove('in'));
+  }
+}
+
+// ══════════════════════════════════════════════
+// COUNTERS
+// ══════════════════════════════════════════════
+function counter(el,from,to,dur=1900){
+  let st=null;
+  (function step(ts){
+    if(!st)st=ts;const p=Math.min((ts-st)/dur,1);const e=1-Math.pow(1-p,4);
+    el.textContent=Math.floor(from+(to-from)*e);
+    if(p<1)requestAnimationFrame(step);else el.textContent=to;
+  })(performance.now());
+}
+setTimeout(()=>{
+  counter(document.getElementById('c1'),1760,1775);
+  counter(document.getElementById('c2'),0,13,1200);
+  counter(document.getElementById('c3'),1760,1783);
+  counter(document.getElementById('c4'),0,8,1000);
+},700);
+
+// ══════════════════════════════════════════════
+// MAIN SCROLL HANDLER
+// ══════════════════════════════════════════════
+window.addEventListener('scroll',()=>{upPbar();upHero();upParallax();upTimeline()},{passive:true});
+upHero();upParallax();
+
+// ══════════════════════════════════════════════
+// BIDIRECTIONAL IO — all animations REPLAY on re-scroll
+// ══════════════════════════════════════════════
+function biObs(sel,opts){
+  const o=new IntersectionObserver(es=>{es.forEach(e=>e.target.classList.toggle('in',e.isIntersecting))},opts);
+  document.querySelectorAll(sel).forEach(el=>o.observe(el));
+}
+
+biObs('.wipe',{threshold:.3});
+biObs('.rise',{threshold:.25});
+biObs('.drop',{threshold:.1});
+biObs('.sl,.sr',{threshold:.08});
+biObs('.flip',{threshold:.08});
+biObs('.pop',{threshold:.15});
+biObs('.zoom',{threshold:.12});
+biObs('.rulefx',{threshold:.25});
+
+// Power cards bidirectional
+biObs('.pow-card',{threshold:.07});
+
+// Causes columns bidirectional
+biObs('.caus-col',{threshold:.07});
+
+// Consequence cards bidirectional
+biObs('.cons-card',{threshold:.05});
+
+// Fig grid — wave stagger, bidirectional
+document.querySelectorAll('.fig-grid').forEach(g=>{
+  new IntersectionObserver(es=>{es.forEach(e=>{
+    const cards=e.target.querySelectorAll('.fig-card');
+    cards.forEach((c,i)=>{c.style.transitionDelay=e.isIntersecting?i*.06+'s':'0s';c.classList.toggle('in',e.isIntersecting)});
+  })},{threshold:.04}).observe(g);
+});
+
+// ══════════════════════════════════════════════
+// TABS
+// ══════════════════════════════════════════════
+function switchTab(id){
+  document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',['patriots','allies','british'][i]===id));
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.toggle('active',p.id==='tab-'+id));
+  const g=document.querySelector('#tab-'+id+' .fig-grid');
+  if(g){const cs=g.querySelectorAll('.fig-card');cs.forEach(c=>{c.classList.remove('in');c.style.transitionDelay='0s'});requestAnimationFrame(()=>requestAnimationFrame(()=>{cs.forEach((c,i)=>{c.style.transitionDelay=i*.06+'s';c.classList.add('in')})}));}
+}
+</script>
+</body>
+</html>
